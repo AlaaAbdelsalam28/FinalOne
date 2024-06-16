@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 
 
@@ -177,50 +179,102 @@ class UserProfileController extends Controller
 
     // }
 
-    public function update(Request $request, $id)
+//     public function update(Request $request, $id)
+// {
+//     // Validate the request data
+//     $request->validate([
+//         'name' => 'required|string|max:255',
+//         'email' => 'required|email|max:255',
+//         'password' => 'nullable|string|min:6',
+//         'status' => 'nullable|string|max:255',
+//         'gender' => 'nullable|string|in:male,female,other',
+//         'age' => 'nullable|integer|min:18',
+//         'phone' => 'nullable|string|max:20',
+//         'photo' => 'nullable|image|max:2048',
+//     ]);
+
+//     // Find the user
+//     $user = User::findOrFail($id);
+
+//     // Update the user attributes based on request data
+//     $user->name = $request->input('name');
+//     $user->email = $request->input('email');
+//     $user->status = $request->input('status', $user->status); // Use existing value if not provided
+//     $user->gender = $request->input('gender', $user->gender); // Use existing value if not provided
+//     $user->age = $request->input('age', $user->age); // Use existing value if not provided
+//     $user->phone = $request->input('phone', $user->phone); // Use existing value if not provided
+
+//     // Update password if provided
+//     if ($request->filled('password')) {
+//         $user->password = Hash::make($request->input('password'));
+//     }
+
+//     // Update photo if provided
+//     if ($request->hasFile('photo')) {
+//         $photo = $request->file('photo');
+//         $photoName = uniqid() . '.' . $photo->getClientOriginalExtension();
+//         $photoPath = $photo->storeAs('photos', $photoName, 'public');
+//         $user->photo = $photoPath;
+//     }
+
+//     // Save the user
+//     $user->save();
+
+//     // Return a success response
+//     return response()->json(['success' => 'Profile updated successfully.']);
+// }
+
+public function update(Request $request, $id)
 {
-    // Validate the request data
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email|max:255',
-        'password' => 'nullable|string|min:6',
-        'status' => 'nullable|string|max:255',
-        'gender' => 'nullable|string|in:male,female,other',
-        'age' => 'nullable|integer|min:18',
-        'phone' => 'nullable|string|max:20',
-        'photo' => 'nullable|image|max:2048',
-    ]);
+    // dd($request->all());
+    try {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email',
+            'password' => 'nullable|string|min:8',
+            'status' => 'required|string',
+            'gender' => 'required|string',
+            'age' => 'required|integer',
+            'phone' => 'required|string|max:15',
+            'photo' => 'nullable|string|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
 
-    // Find the user
-    $user = User::findOrFail($id);
+        // Step 4: Find the User
+        $user = User::findOrFail($id);
 
-    // Update the user attributes based on request data
-    $user->name = $request->input('name');
-    $user->email = $request->input('email');
-    $user->status = $request->input('status', $user->status); // Use existing value if not provided
-    $user->gender = $request->input('gender', $user->gender); // Use existing value if not provided
-    $user->age = $request->input('age', $user->age); // Use existing value if not provided
-    $user->phone = $request->input('phone', $user->phone); // Use existing value if not provided
+        // Step 5: Update the User
+        $userData = $request->except(['_token', '_method']); // exclude CSRF token and method spoofing field
 
-    // Update password if provided
-    if ($request->filled('password')) {
-        $user->password = Hash::make($request->input('password'));
+        if ($request->has('password') && $request->password != null) {
+            $userData['password'] = Hash::make($request->password);
+        }
+
+        if ($request->has('photo')) {
+            $photoBase64 = $request->input('photo');
+            $photoData = base64_decode($photoBase64);
+            $imageName = time(). '.'. 'jpg'; // or other extension
+            $filePath = storage_path('public/images/'. $imageName);
+            file_put_contents($filePath, $photoData);
+            $userData['photo'] = $imageName;
+        }
+
+        // Debug the update query
+        DB::enableQueryLog();
+
+        $user->update($userData);
+
+        $queries = DB::getQueryLog();
+
+        // Log the update query
+        Log::debug('Update query:', $queries);
+
+        return response()->json(['message' => 'User updated successfully', 'user' => $user], 200);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        $errors = $e->validator->errors()->all();
+        return response()->json(['message' => 'Error updating user', 'errors' => $errors], 422);
+    }catch (\Exception $e) {
+        Log::error('Error updating user: '. $e->getMessage());
+        return response()->json(['message' => 'Error updating user'], 500);
     }
-
-    // Update photo if provided
-    if ($request->hasFile('photo')) {
-        $photo = $request->file('photo');
-        $photoName = uniqid() . '.' . $photo->getClientOriginalExtension();
-        $photoPath = $photo->storeAs('photos', $photoName, 'public');
-        $user->photo = $photoPath;
-    }
-
-    // Save the user
-    $user->save();
-
-    // Return a success response
-    return response()->json(['success' => 'Profile updated successfully.']);
 }
-
-
 }

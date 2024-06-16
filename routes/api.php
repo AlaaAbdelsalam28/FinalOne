@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\OwnerProfileController;
 use App\Http\Controllers\Auth\UserProfileController;
 use App\Http\Controllers\rentalController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\FilterController;
 use App\Http\Middleware\ApiMiddleware;
 use App\Http\Middleware\CheckApiToken;
 use App\Http\Middleware\OwnerMiddleware;
@@ -94,4 +95,7 @@ Route::post('/rental', [RentalController::class, 'store_rental'])->middleware('a
 
 Route::get('/owneraccept', [rentalController::class, 'showRentals']);
 Route::put('rentals/{rental}/confirm', [rentalController::class, 'confirm']);
+
+Route::get('/filter', [FilterController::class, 'showFilterForm']);
+Route::get('/filtered-accommodations', [FilterController::class, 'filter']);
 

@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Owner;
 
 
@@ -187,76 +188,127 @@ class OwnerProfileController extends Controller
 //     }
 // }
 
+// public function update(Request $request, $id)
+// {
+//     try {
+//         // Add debug statement to see if the method is being called
+//         logger()->info('Update method called.');
+
+//         // $request->merge([
+//         //     'name' => $request->input('name'),
+//         //     'email' => $request->input('email'),
+//         //     'phone' => $request->input('phone'),
+//         //     'password' => $request->input('password'),
+//         // ]);
+
+//         // // Validate the request data
+//         // $request->validate([
+//         //     'name' => 'required|string|max:255',
+//         //     'email' => 'required|string|email|max:255|unique:owners,email,' . $owner->id,
+//         //     'phone' => 'required|string|max:255',
+//         //     'password' => 'nullable|string|min:8|confirmed',
+//         //     'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+//         // ]);
+
+//         $owner = Owner::findOrFail($id);
+//         // Add debug statement to see the request data
+//         logger()->info('Request data:', $request->all());
+
+//         // Update owner's information
+//         $owner->name = $request->name;
+//         $owner->email = $request->email;
+//         $owner->phone = $request->phone;
+
+//         // Check if password is provided and update if necessary
+//         if (!empty($request->password)) {
+//             $owner->password = Hash::make($request->password);
+//         }
+
+//         // Check if a new photo has been uploaded and update if necessary
+//         if ($request->hasFile('photo')) {
+//             $photo = $request->file('photo');
+//             $photoName = uniqid() . '.' . $photo->getClientOriginalExtension();
+//             $photoPath = $photo->storeAs('photos', $photoName, 'public');
+//             $owner->photo = $photoPath;
+//         }
+
+//         // Save the updated owner information
+//         $owner->save();
+
+//         // Add debug statement to confirm the save operation
+//         logger()->info('Owner profile updated.');
+
+//         // Redirect back with success message
+//        // return redirect()->route('owner.profile')->with('success', 'Profile updated successfully.');
+//         return response()->json(['success', 'Profile updated successfully.']);
+//     } 
+//     // catch (\Illuminate\Validation\ValidationException $e) {
+//     //     // Log the validation error for debugging
+//     //     logger()->error('Validation error: ' . json_encode($e->errors()));
+    
+//     //     // Return detailed validation error message
+//     //     return response()->json(['error' => $e->errors()], 422);
+//     // } 
+//     catch (\Exception $e) {
+
+//         // Log the error for debugging
+//         logger()->error('Error updating owner profile: ' . $e->getMessage());
+
+//         // Redirect back with error message
+//          return redirect()->back()->with('error', 'Failed to update profile. Please try again.');
+//         //return response()->json(['error' => $e->getMessage()], 500);
+
+//     }
+// }
+
 public function update(Request $request, $id)
 {
+    // dd($request->all());
     try {
-        // Add debug statement to see if the method is being called
-        logger()->info('Update method called.');
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email',
+            'password' => 'nullable|string|min:8',
+            'phone' => 'required|string|max:15',
+            'photo' => 'nullable|string|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
 
-        // $request->merge([
-        //     'name' => $request->input('name'),
-        //     'email' => $request->input('email'),
-        //     'phone' => $request->input('phone'),
-        //     'password' => $request->input('password'),
-        // ]);
-
-        // // Validate the request data
-        // $request->validate([
-        //     'name' => 'required|string|max:255',
-        //     'email' => 'required|string|email|max:255|unique:owners,email,' . $owner->id,
-        //     'phone' => 'required|string|max:255',
-        //     'password' => 'nullable|string|min:8|confirmed',
-        //     'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        // ]);
-
+        // Step 4: Find the User
         $owner = Owner::findOrFail($id);
-        // Add debug statement to see the request data
-        logger()->info('Request data:', $request->all());
 
-        // Update owner's information
-        $owner->name = $request->name;
-        $owner->email = $request->email;
-        $owner->phone = $request->phone;
+        // Step 5: Update the User
+        $ownerData = $request->except(['_token', '_method']); // exclude CSRF token and method spoofing field
 
-        // Check if password is provided and update if necessary
-        if (!empty($request->password)) {
-            $owner->password = Hash::make($request->password);
+        if ($request->has('password') && $request->password != null) {
+            $ownerData['password'] = Hash::make($request->password);
         }
 
-        // Check if a new photo has been uploaded and update if necessary
-        if ($request->hasFile('photo')) {
-            $photo = $request->file('photo');
-            $photoName = uniqid() . '.' . $photo->getClientOriginalExtension();
-            $photoPath = $photo->storeAs('photos', $photoName, 'public');
-            $owner->photo = $photoPath;
+        if ($request->has('photo')) {
+            $photoBase64 = $request->input('photo');
+            $photoData = base64_decode($photoBase64);
+            $imageName = time(). '.'. 'jpg'; // or other extension
+            $filePath = storage_path('public/images/'. $imageName);
+            file_put_contents($filePath, $photoData);
+            $ownerData['photo'] = $imageName;
         }
 
-        // Save the updated owner information
-        $owner->save();
+        // Debug the update query
+        DB::enableQueryLog();
 
-        // Add debug statement to confirm the save operation
-        logger()->info('Owner profile updated.');
+        $owner->update($ownerData);
 
-        // Redirect back with success message
-       // return redirect()->route('owner.profile')->with('success', 'Profile updated successfully.');
-        return response()->json(['success', 'Profile updated successfully.']);
-    } 
-    // catch (\Illuminate\Validation\ValidationException $e) {
-    //     // Log the validation error for debugging
-    //     logger()->error('Validation error: ' . json_encode($e->errors()));
-    
-    //     // Return detailed validation error message
-    //     return response()->json(['error' => $e->errors()], 422);
-    // } 
-    catch (\Exception $e) {
+        $queries = DB::getQueryLog();
 
-        // Log the error for debugging
-        logger()->error('Error updating owner profile: ' . $e->getMessage());
+        // Log the update query
+        Log::debug('Update query:', $queries);
 
-        // Redirect back with error message
-         return redirect()->back()->with('error', 'Failed to update profile. Please try again.');
-        //return response()->json(['error' => $e->getMessage()], 500);
-
+        return response()->json(['message' => 'owner updated successfully', 'owner' => $owner], 200);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        $errors = $e->validator->errors()->all();
+        return response()->json(['message' => 'Error updating owner', 'errors' => $errors], 422);
+    }catch (\Exception $e) {
+        Log::error('Error updating user: '. $e->getMessage());
+        return response()->json(['message' => 'Error updating owner'], 500);
     }
 }
 

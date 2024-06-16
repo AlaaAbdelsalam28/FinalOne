@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\rentalController;
 use App\Http\Controllers\RecommendationController;
+use App\Http\Controllers\FilterController;
 use App\Http\Controllers\Auth\LogoutController;
 /*
 |--------------------------------------------------------------------------
@@ -126,7 +127,8 @@ Route::get('/owneraccept', [rentalController::class, 'showRentals'])->name(name:
 Route::put('rentals/{rental}/confirm', [rentalController::class, 'confirm'])->name('rental.confirm');
 
 
-
+Route::get('/filter', [FilterController::class, 'showFilterForm'])->name('filter.form');
+Route::get('/filtered-accommodations', [FilterController::class, 'filter'])->name('filter');
 
 
 

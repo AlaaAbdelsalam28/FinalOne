@@ -133,12 +133,13 @@ public function store(Request $request){
     }
     $mainImagePath = $request->file('main_image')->store('images', 'public');
 $uploadedImages = [];
-
+// dd($request->images);
     if ($request->hasFile('images')) {
         foreach ($request->file('images') as $image) {
             $path = $image->store('images', 'public');
             $uploadedImages[] = $path;
         }}
+
         $accommodationData = $validator->validated();
         $accommodationData['main_image'] = $mainImagePath;
         $accommodationData['images'] = $uploadedImages;
@@ -235,7 +236,7 @@ public function show($accommodation_id)
         $images[] = asset('storage/' . $image); // Adjust the path accordingly
     }
     $availability = $accommodation->availability;
-
+    // request()->header('Access-Control-Allow-Origin', '*');
     // Return JSON response with specific accommodation data and image URLs
     return response()->json([
         'accommodation' => [
@@ -488,47 +489,142 @@ public function edit($id)
 //     return response()->json(['success', 'Accommodation updated successfully'], 200);
 // }
 
-public function update(Request $request, $id)
-{
-    $accommodation = Accommodation::findOrFail($id);
+// public function update(Request $request, $id)
+// {
+//     // dd($request->all());
+//     $accommodation = Accommodation::findOrFail($id);
 
-    // Check if the user is authorized to update this accommodation
-    if ($accommodation->owner_id !== Auth::id()) {
-        return response()->json(['error' => 'Unauthorized'], 403);
+//     // Check if the user is authorized to update this accommodation
+//     if ($accommodation->owner_id !== Auth::id()) {
+//         return response()->json(['error' => 'Unauthorized'], 403);
+//     }
+
+//    // Validate the request data
+//     $request->validate([
+//         'description' => 'required|string|max:255',
+//         'address' => 'required|string',
+//         'location_link' => 'required|url',
+//         'governorate' => 'required|string',
+//         'region' => 'required|string',
+//         'facilities' => 'required|string',
+//         'price' => 'required|numeric',
+//         'shared_or_individual' => 'required|string|in:shared,individual',
+//         'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
+//         'main_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
+//         'no_of_tenants' => 'required|integer',
+
+//     ]);
+
+//     // Update the accommodation with the request data
+//     $accommodation->update($request->all());
+
+//     // Handle images upload
+//     if ($request->hasFile('images')) {
+//         foreach ($request->file('images') as $image) {
+//             $path = $image->store('images', 'public');
+//             // Save each image path to your database if needed
+//         }
+//     }
+
+//     if ($request->hasFile('main_image')) {
+//         $mainImagePath = $request->file('main_image')->store('images', 'public');
+//         // Save the main image path to your database if needed
+//     }
+
+//     return response()->json(['success' => 'Accommodation updated successfully'], 200);
+// }
+
+public function update(Request $request, $id) {
+    // Check if the user is authenticated
+    if (!Auth::check()) {
+        return response()->json(['error' => 'Unauthorized. You must be logged in to update accommodation.'], 401);
     }
 
-    // Validate the request data
-    $request->validate([
-        'description' => 'required|string|max:255',
-        'address' => 'required|string',
-        'location_link' => 'required|url',
-        'governorate' => 'required|string',
-        'region' => 'required|string',
-        'facilities' => 'required|string',
-        'price' => 'required|numeric',
-        'shared_or_individual' => 'required|string|in:shared,individual',
-        'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
-        'main_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
-    ]);
+    $user = Auth::user();
+    if ($user && $user->id) {
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
+            'description' => 'required|string|max:255',
+            'address' => 'required|string',
+            'location_link' => 'required|url',
+            'governorate' => 'required|string',
+            'region' => 'required|string',
+            'facilities' => 'required|string',
+            'price' => 'required|numeric',
+            'shared_or_individual' => 'required|string|in:shared,individual',
+            'main_image'=>'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
+            // 'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:20480',
+            'no_of_tenants' => 'required|integer|min:1'
+        ]);
 
-    // Update the accommodation with the request data
-    $accommodation->update($request->all());
-
-    // Handle images upload
-    if ($request->hasFile('images')) {
-        foreach ($request->file('images') as $image) {
-            $path = $image->store('images', 'public');
-            // Save each image path to your database if needed
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
         }
-    }
 
-    if ($request->hasFile('main_image')) {
-        $mainImagePath = $request->file('main_image')->store('images', 'public');
-        // Save the main image path to your database if needed
-    }
+        // Find the accommodation
+        $accommodation = Accommodation::find($id);
+        if (!$accommodation) {
+            return response()->json(['error' => 'Accommodation not found.'], 404);
+        }
 
-    return response()->json(['success' => 'Accommodation updated successfully'], 200);
+        // Check if the authenticated user is the owner
+        if ($accommodation->owner_id != $user->id) {
+            return response()->json(['error' => 'Unauthorized. You do not own this accommodation.'], 403);
+        }
+
+        if ($request->hasFile('main_image')) {
+            // Delete old main image if exists
+            if ($accommodation->main_image) {
+                Storage::delete($accommodation->main_image);
+            }
+
+            // Store new main image
+           // Store new main image
+          $file = $request->file('main_image');
+          $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+          $path = $file->storeAs('public/images', $filename);
+
+          // Update accommodation record with new image path
+          $accommodation->main_image = 'storage/images/' . $filename; // Add missing slash here
+          
+          $accommodation->save();
+        }
+
+        // Update the main image if provided
+        // if ($request->hasFile('main_image')) {
+        //     $mainImagePath = $request->file('main_image')->store('images', 'public');
+        // $accommodationData['main_image'] = $mainImagePath;
+        // }
+
+        // Update additional images if provided
+        $uploadedImages = $accommodation->images ?: [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('images', 'public');
+                $uploadedImages[] = $path;
+            }
+        }
+
+        // Update the accommodation with the validated data
+        $accommodationData = $validator->validated();
+        $accommodationData['images'] = $uploadedImages;
+        
+        $accommodation->update($accommodationData);
+
+        // Update no_of_tenants_available based on shared_or_individual
+        $noOfTenantsAvailable = $accommodation->shared_or_individual === 'shared' ? $accommodation->no_of_tenants : 1;
+        $accommodation->no_of_tenants_available = $noOfTenantsAvailable;
+        $accommodation->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Accommodation updated successfully',
+        ]);
+    } else {
+        return response()->json(['error' => 'You must be logged in to update accommodation.'], 401);
+    }
 }
+
 
 
 public function destroy($id)

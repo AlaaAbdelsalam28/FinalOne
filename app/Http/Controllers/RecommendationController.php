@@ -43,18 +43,38 @@ class RecommendationController extends Controller
         //     whereIn('region', $recommendedAreas)
         //     ->orderByRaw("FIELD(region, '" . implode("','", $recommendedAreas) . "')") //sort results based on elem from array
         //     ->get();
+        // $accommodations = Accommodation::whereIn('region', $recommendedAreas)
+        // ->orderByRaw("FIELD(region, '" . implode("','", $recommendedAreas) . "')")
+        //     ->get()
+        //     ->filter(function($accommodation) {
+        //         return $accommodation->isAvailable();
+        //     });
+    
+        // // return view('recommendation_system_output', ['recommendations' => $recommendedAreas], ['accommodations' => $accommodations]);
+        // return response()->json([
+        //     'recommendations' => $recommendedAreas,
+        //     'accommodations' => $accommodations,
+        // ], 200);
+
+
         $accommodations = Accommodation::whereIn('region', $recommendedAreas)
-        ->orderByRaw("FIELD(region, '" . implode("','", $recommendedAreas) . "')")
+            ->orderByRaw("FIELD(region, '" . implode("','", $recommendedAreas) . "')")
             ->get()
             ->filter(function($accommodation) {
                 return $accommodation->isAvailable();
-            });
-    
-        // return view('recommendation_system_output', ['recommendations' => $recommendedAreas], ['accommodations' => $accommodations]);
-        return response()->json([
-            'recommendations' => $recommendedAreas,
-            'accommodations' => $accommodations,
-        ], 200);
+            })
+            // ->map(function ($accommodation) {
+            //     return [
+            //         'governorate' => $accommodation->governorate,
+            //         'region' => $accommodation->region,
+            //         'price' => $accommodation->price,
+            //         'main_image' => $accommodation->main_image,
+            //     ];
+            // })
+            // ->values()
+            ->toArray();
+
+        return response()->json(['accommodations' => $accommodations]);
         
     }
 

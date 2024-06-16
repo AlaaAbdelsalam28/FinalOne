@@ -43,11 +43,11 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'owner/profile/*', 'storage/*'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'owner/profile/*', 'storage/images/*'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173'],
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
@@ -57,7 +57,7 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true, // Ensure this is set to true
+    'supports_credentials' => false, // Ensure this is set to true
 
 ];
 
