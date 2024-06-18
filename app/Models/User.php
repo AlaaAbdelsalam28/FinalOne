@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-
+use Illuminate\Database\Eloquent\Relations\HasOne;
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -45,5 +45,10 @@ class User extends Authenticatable
     public function accommodations()
     {
         return $this->has(Accommodation::class);
+    }
+
+    public function wishlist(): HasOne
+    {
+        return $this->hasOne(Wishlist::class);
     }
 }

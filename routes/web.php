@@ -11,7 +11,10 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\rentalController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\FilterController;
+use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\WishlistItemController;
 use App\Http\Controllers\Auth\LogoutController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -130,6 +133,11 @@ Route::put('rentals/{rental}/confirm', [rentalController::class, 'confirm'])->na
 Route::get('/filter', [FilterController::class, 'showFilterForm'])->name('filter.form');
 Route::get('/filtered-accommodations', [FilterController::class, 'filter'])->name('filter');
 
+Route::middleware('auth')->group(function () {
+    Route::get('wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+    Route::post('wishlist/{accommodation}', [WishlistItemController::class, 'store'])->name('wishlist.items.store');
+    Route::delete('wishlist/{accommodation}', [WishlistItemController::class, 'destroy'])->name('wishlist.items.destroy');
+});
 
 
 //Auth::routes();

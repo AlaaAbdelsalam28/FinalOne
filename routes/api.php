@@ -14,6 +14,8 @@ use App\Http\Controllers\Auth\UserProfileController;
 use App\Http\Controllers\rentalController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\FilterController;
+use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\WishlistItemController;
 use App\Http\Middleware\ApiMiddleware;
 use App\Http\Middleware\CheckApiToken;
 use App\Http\Middleware\OwnerMiddleware;
@@ -98,4 +100,11 @@ Route::put('rentals/{rental}/confirm', [rentalController::class, 'confirm']);
 
 Route::get('/filter', [FilterController::class, 'showFilterForm']);
 Route::get('/filtered-accommodations', [FilterController::class, 'filter']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('wishlist', [WishlistController::class, 'index']);
+    Route::post('wishlist/{accommodation}', [WishlistItemController::class, 'store']);
+    Route::delete('wishlist/{accommodation}', [WishlistItemController::class, 'destroy']);
+});
+
 

@@ -36,7 +36,7 @@ class rentalController extends Controller
     {
         $user_id = Auth::id();
         $data = request()->all();
-        $image = request('img');
+        $image = request('img')->store('receipts', 'public');
         $refrence_number = request('reference_number');
         $end_date = request('end_date');
         //$start_date = created_at()->addDays(5)->format('Y-m-d');
@@ -45,7 +45,7 @@ class rentalController extends Controller
         // $accommodation_id = $data['accommodation_id'];
         //$user_id = Auth::id(); // Get the ID of the currently authenticated user
         //$accommodation_id=Accommodation::where('id',$accommodation_id)->first()->id;
-        Rental::create([
+        $rental = Rental::create([
             'start_date'=>$start_date,
             'end_date' => $end_date,
             'reference_number' => $refrence_number,
@@ -54,8 +54,8 @@ class rentalController extends Controller
             'receipt' => $image,
             'confirmed'=>0,
         ]);
-        return to_route(route:'accommodation.showAll');
-
+        // return to_route(route:'accommodation.showAll');
+        return response()->json(['rental' => $rental], 201);
     }
 
 //     public function store_rental(Request $request)
