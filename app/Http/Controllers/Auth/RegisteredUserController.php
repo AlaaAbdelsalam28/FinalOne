@@ -67,18 +67,6 @@ class RegisteredUserController extends Controller
 
         elseif ($userType === 'owner') {
             $owner = Owner::create($userData);
-              //Auth::login($owner);
-
-             
-            // $apiToken = Str::random(80); // Generate a random token
-            // $owner->api_token = hash('sha256', $apiToken); // Hash the token before storing
-            // $owner->save();
-            // Auth::guard('owner')->login($owner ,true);
-
-            // Session::flash('message', 'Registration successful! You are now an owner.');
-            // session(['user_type' => 'owner']);
-
-            
 
             Auth::guard('owner')->setUser($owner);
 
@@ -86,15 +74,6 @@ class RegisteredUserController extends Controller
 
             event(new Registered($owner));
 
-            // $token = $owner->createToken($owner->name.'-AuthToken')->plainTextToken;
-        
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Success you are owner!',
-            //     'user' => $owner,
-            //     'token'=>$token,
-            //     'userType' => 'owner' 
-            // ]);
 
 
             return 'Success you are owner!';
@@ -105,12 +84,9 @@ class RegisteredUserController extends Controller
             event(new Registered($user));
 
     
-            // Session::flash('message', 'Registration successful! You are now a user.');
-            // session(['user_type' => 'user']);
             return 'Success you are user!';
         }
     
-        //return redirect()->route('register.message');
     }
     
 

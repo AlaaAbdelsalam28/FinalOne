@@ -140,15 +140,42 @@ class rentalController extends Controller
     //         return response()->json(['error' => 'No image uploaded'], 400);
     //     }
     // }
-    public function showRentals()
-{
-    $rentals = Rental::all();
-    $users= User::all();
-    //dd($rentals);
-    //return view('owner', compact('rentals'));
-    return view('owner', ['rentals' => $rentals, 'users' => $users]);
-}
 
+    public function showRentals()
+    {
+            $rentals = Rental::all();
+            $users = User::all();
+    
+            return response()->json(['rentals' => $rentals, 'users' => $users], 200);
+    }
+
+    public function refuse(Rental $rental)
+    {
+    $rental->update(['confirmed' => false]);
+    $rental->save();
+
+    return redirect()->back()->with('success', 'Service refused.');
+     }
+     public function confirm(Rental $rental)
+     {
+
+    $rental->update(['confirmed' => true]);
+
+        $accommodation = $rental->accommodation;
+        $noOfTenantsAvailable = $accommodation->no_of_tenants_available;
+        if ($noOfTenantsAvailable > 0) {
+            $noOfTenantsAvailable--;
+        }
+        $accommodation->no_of_tenants_available = $noOfTenantsAvailable;
+        $accommodation->save();
+        
+    return response()->json([
+        'success' => true,
+        'message' => 'Rental confirmed successfully.',
+    ]);
+     }
+
+    
 // public function confirm(Rental $rental)
 // {
 //     $rental->update(['confirmed' => true]);
@@ -306,27 +333,45 @@ class rentalController extends Controller
 // }
 
 
-public function confirm(Rental $rental)
-{
 
-    $rental->update(['confirmed' => true]);
+public function showUserData($userId)
+    {
+        // Get the user data from the rental
+        $user = $this->getUserDataFromRental($userId);
 
-        $accommodation = $rental->accommodation;
-        $noOfTenantsAvailable = $accommodation->no_of_tenants_available;
-
-        // Decrement the number of tenants available if it's not already zero
-        if ($noOfTenantsAvailable > 0) {
-            $noOfTenantsAvailable--;
+        if ($user) {
+            // Return user data, or pass it to a view, etc.
+            return response()->json($user);
+        } else {
+            return response()->json(['error' => 'User not found'], 404);
         }
+    }
 
-        // Update the accommodation with the new number of tenants available
-        $accommodation->no_of_tenants_available = $noOfTenantsAvailable;
-        $accommodation->save();
-        
-    return response()->json([
-        'success' => true,
-        'message' => 'Rental confirmed successfully.',
-    ]);
+    private function getUserDataFromRental($userId)
+    {
+        // Find the rentals by user_id
+        $rental = Rental::where('user_id', $userId)->first();
+
+        // Get the user data associated with the rental
+        if ($rental) {
+            $user = $rental->user;
+            return $user;
+        } else {
+            return null; // or handle the case where no rental is found
+        }
+    }
+    public function getByAccommodationId($accommodation_id)
+{
+    // Assuming Rental is your model and rentals table has accommodation_id column
+    $rentals = Rental::where('accommodations_id', $accommodation_id)
+                     ->get()
+                     ->where('confirmed', 1)
+                     ->toArray();
+    // if ($rentals->isEmpty()) {
+    //                     return response()->json(['message' => 'No confirmed rentals found for this accommodation.'], 404);
+    //                 }
+
+    return response()->json($rentals);
 }
 
 }

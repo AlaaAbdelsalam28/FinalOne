@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\UserProfileController;
 use App\Http\Controllers\Auth\OwnerProfileController;
@@ -65,8 +66,8 @@ Route::middleware(['auth', 'auth:owner'])->group(function () {
 
 // Route::post('/accommodation', [AccommodationController::class, 'store'])->name('accommodation.store');
 
-Route::get('/accommodation/prop', [AccommodationController::class, 'showAll'])->name('accommodation.showAll');
-Route::get('/accommodation/some', [AccommodationController::class, 'showSome'])->name('accommodation.showSome');
+// Route::get('/accommodation/prop', [AccommodationController::class, 'showAll'])->name('accommodation.showAll');
+// Route::middleware('auth:sanctum')->get('/accommodations', [AccommodationController::class, 'showAll']);
 
 Route::get('/upload/message', [ AccommodationController::class, 'showuploadMessage'])->name('upload.message');
 // Route::get('accommodation/{id}', [AccommodationController::class, 'show'])->name('image.show');

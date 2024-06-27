@@ -99,6 +99,7 @@ use Illuminate\Http\Request;
 use App\Models\Owner;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\View\View;
@@ -152,54 +153,57 @@ class AuthenticatedSessionController extends Controller
                 ]);
             }
         } elseif (Auth::guard('admin')->attempt($request->only('email', 'password'))) {
+            // If authentication is successful, retrieve the authenticated admin user
             $admin = Auth::guard('admin')->user();
-            
+        
+            // Generate a new personal access token for the admin
+             $token = $admin->createToken($admin->name . '-AuthToken')->plainTextToken;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Success you are logged in as admin',
                 'user' => $admin,
-                'userType' => 'Admin' 
+                'token' => $token, // Send the plain token to the client
+                'userType' => 'Admin'
             ]);
         }
-    
-        // If no specific user type is detected or authentication fails, return error response
+        
+        // If authentication fails, return an error response
         return response()->json([
             'success' => false,
             'message' => 'Invalid credentials.'
         ], 401);
     }
 
+//     elseif (Auth::guard('admin')->attempt($request->only('email', 'password'))) {
+//         // If authentication is successful, retrieve the authenticated admin user
+//         $admin = Auth::guard('admin')->user();
+    
+//         // Generate a new personal access token for the admin
+//          $token = $admin->createToken($admin->name . '-AuthToken');
+
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'Success you are logged in as admin',
+//             'user' => $admin,
+//             'token' => $token, // Send the plain token to the client
+//             'userType' => 'Admin'
+//         ]);
+//     }
+    
+//     // If authentication fails, return an error response
+//     return response()->json([
+//         'success' => false,
+//         'message' => 'Invalid credentials.'
+//     ], 401);
+// }
+//     }
     /**
      * Destroy an authenticated session.
      */
     public function destroy(Request $request)
     {
-        // Auth::guard('web')->logout();
-        // Auth::guard('owner')->logout();
-
-        // return response()->json([
-        //     'success' => true,
-        //     'message' => 'Logged out successfully.'
-        // ]);
-        // if (Auth::guard('web')->check()) {
-        //     Auth::guard('web')->logout();
-        //     return response()->json([
-        //         'success' => true,
-        //         'message' => 'Logged out as a web user successfully.'
-        //     ]);
-        // } elseif (Auth::guard('owner')->check()) {
-        //     Auth::guard('owner')->logout();
-        //     return response()->json([
-        //         'success' => true,
-        //         'message' => 'Logged out as an owner successfully.'
-        //     ]);
-        // } else {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'No user logged in.',
-        //     ], 401); // Unauthorized status code
-        // }
-
+        
         if ($user = $request->user()) {
             // Log out the user and invalidate their token(s)
             $user->tokens()->delete();

@@ -254,33 +254,100 @@ public function show($accommodation_id)
     ]);
 }
 
+public function showall()
+{
+    $accommodations = Accommodation::all();
+    $accommodationData = [];
 
+    foreach ($accommodations as $accommodation) {
+        // Initialize images array
+        $images = [];
+
+        // Check if images is an array or collection
+        if (is_array($accommodation->images) || $accommodation->images instanceof \Illuminate\Support\Collection) {
+            foreach ($accommodation->images as $image) {
+                $images[] = asset('storage/' . $image); // Adjust the path accordingly
+            }
+        }
+
+        $accommodationData[] = [
+            'id'=>$accommodation->id,
+            'description' => $accommodation->description,
+            'address' => $accommodation->address,
+            'location_link' => $accommodation->location_link,
+            'governorate' => $accommodation->governorate,
+            'region' => $accommodation->region,
+            'price' => $accommodation->price,
+            'facilities' => $accommodation->facilities,
+            'shared_or_individual' => $accommodation->shared_or_individual,
+            'images' => $images,
+            'main_image' => asset('storage/' . $accommodation->main_image),
+            'availability' => $accommodation->availability,
+        ];
+    }
+
+    return response()->json(['accommodations' => $accommodationData]);
+}
+
+public function destroys($id)
+{
+    $accommodation = Accommodation::find($id);
+
+    if (!$accommodation) {
+        return response()->json(['error' => 'Accommodation not found'], 404);
+    }
+
+    $accommodation->delete();
+
+    return response()->json(['success' => 'Accommodation deleted successfully'], 200);
+}
 
 
 // public function showAll()
-// {
-//     $accommodations = Accommodation::all();
-//     $images = [];
+//     {
+//         try {
+//             // Ensure user is authenticated as admin
+//             $admin = Auth::user();
+//             if (!$admin) {
+//                 return response()->json(['message' => 'Unauthorized'], 401);
+//             }
 
-//     foreach ($accommodations as $accommodation) {
-//         // Retrieve images for each accommodation
-//         $accommodationImages = [];
-//         foreach ($accommodation->images as $image) {
-//             $accommodationImages[] = asset('storage/' . $image); // Adjust the path accordingly
+//             // Retrieve all accommodations
+//             $accommodations = Accommodation::all();
+
+//             // Prepare data to return
+//             $accommodationData = [];
+//             foreach ($accommodations as $accommodation) {
+//                 $accommodationData[] = [
+//                     'id' => $accommodation->id,
+//                     'description' => $accommodation->description,
+//                     'address' => $accommodation->address,
+//                    'location_link' => $accommodation->location_link,
+//             'governorate' => $accommodation->governorate,
+//             'region' => $accommodation->region,
+//             'price' => $accommodation->price,
+//             'facilities' => $accommodation->facilities,
+//             'shared_or_individual' => $accommodation->shared_or_individual,
+//             // 'images' => $images,
+//             // 'availability' => $availability,
+//                 ];
+//             }
+
+//             return response()->json(['accommodations' => $accommodationData], 200);
+
+//         } catch (\Exception $e) {
+//             \Log::error('Failed to get accommodations: ' . $e->getMessage());
+//             return response()->json(['message' => 'Failed to get accommodations'], 500);
 //         }
-//         $images[$accommodation->id] = $accommodationImages;
 //     }
 
-//     return view('auth.all-accommodations', compact('accommodations', 'images'));
-// }
-
-public function showAll()
-{
-    // Retrieve all accommodations with only the id and main_image columns
-    $accommodations = Accommodation::select('id', 'main_image')->get();
+// public function showAll()
+// {
+//     // Retrieve all accommodations with only the id and main_image columns
+//     $accommodations = Accommodation::select('id', 'main_image')->get();
     
-    return view('auth.all-accommodations', compact('accommodations'));
-}
+//     return view('auth.all-accommodations', compact('accommodations'));
+// }
 
 
 // public function showSome()
@@ -299,55 +366,58 @@ public function showAll()
 
 //     return view('auth.some-accommodations', compact('someAccommodations', 'images'));
 // }
-// public function showSome()
-// {
-//     // Retrieve 6 random accommodations
-//     $someAccommodations = Accommodation::inRandomOrder()->limit(6)->get();
-
-//     $images = [];
-//     foreach ($someAccommodations as $accommodation) {
-//         // Retrieve and decode images for each accommodation
-//         $accommodationImages = [];
-
-//         // Assuming images are stored as a JSON string in the database
-//         // Check if images attribute is not already an array
-//         $imageArray = is_string($accommodation->images) ? json_decode($accommodation->images, true) : $accommodation->images;
-
-//         // Check if $imageArray is an array
-//         if (is_array($imageArray)) {
-//             foreach ($imageArray as $image) {
-//                 $accommodationImages[] = asset('storage/' . $image); // Adjust the path accordingly
-//             }
-//         }
-
-//         $images[$accommodation->id] = $accommodationImages;
-//     }
-//     //return response()->json(['accommodations' =>   $someAccommodations ,  $images]);
-//    return view('auth.some-accommodations', compact('someAccommodations', 'images'));
-// }
-
-
-// Backend (AccommodationController.php)
-public function showSome()
+public function showSomee()
 {
-    $someAccommodations = Accommodation::inRandomOrder()->limit(6)->get();
+        // Retrieve 6 random accommodations
+        // $someAccommodations = Accommodation::inRandomOrder()->limit(3)->get();
+        $someAccommodations = Accommodation::orderBy('created_at', 'desc')->limit(3)->get();
 
-    $accommodationsWithImages = $someAccommodations->map(function ($accommodation) {
-        $images = is_string($accommodation->images) ? json_decode($accommodation->images, true) : $accommodation->images;
+        $images = [];
+        foreach ($someAccommodations as $accommodation) {
+            // Retrieve and decode images for each accommodation
+            $accommodationImages = [];
 
-        if (is_array($images)) {
-            $images = array_map(function ($image) {
-                return asset('storage/' . $image);
-            }, $images);
+            // Assuming images are stored as a JSON string in the database
+            // Check if images attribute is not already an array
+            $imageArray = is_string($accommodation->images) ? json_decode($accommodation->images, true) : $accommodation->images;
+
+            // Check if $imageArray is an array
+            if (is_array($imageArray)) {
+                foreach ($imageArray as $image) {
+                    $accommodationImages[] = asset('storage/' . $image); // Adjust the path accordingly
+                }
+            }
+
+            $images[$accommodation->id] = $accommodationImages;
         }
 
-        $accommodation->images = $images; // Replace the original images attribute with the updated array
+        // Return JSON response with accommodations and images
+        return response()->json(['accommodations' => $someAccommodations, 'images' => $images], 200);
 
-        return $accommodation;
-    });
+   
+}
 
-    return response()->json(['accommodations' => $accommodationsWithImages]);
-}// {
+// Backend (AccommodationController.php)
+// public function showSome()
+// {
+//     $someAccommodations = Accommodation::inRandomOrder()->limit(6)->get();
+
+//     $accommodationsWithImages = $someAccommodations->map(function ($accommodation) {
+//         $images = is_string($accommodation->images) ? json_decode($accommodation->images, true) : $accommodation->images;
+
+//         if (is_array($images)) {
+//             $images = array_map(function ($image) {
+//                 return asset('storage/' . $image);
+//             }, $images);
+//         }
+
+//         $accommodation->images = $images; // Replace the original images attribute with the updated array
+
+//         return $accommodation;
+//     });
+
+//     return response()->json(['accommodations' => $accommodationsWithImages]);
+// }// {
 //     $someAccommodations = Accommodation::inRandomOrder()->limit(6)->get();
 
 //     $accommodationsWithImages = $someAccommodations->map(function ($accommodation) {

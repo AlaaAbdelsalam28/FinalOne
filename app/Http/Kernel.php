@@ -55,6 +55,7 @@ class Kernel extends HttpKernel
         // Other middleware entries...
         'auth.owner' => \App\Http\Middleware\AuthOwnerMiddleware::class,
         'cors' => \App\Http\Middleware\CorsMiddleware::class,
+        'admin' => \App\Http\Middleware\AdminMiddleware::class,
 
     ];
 

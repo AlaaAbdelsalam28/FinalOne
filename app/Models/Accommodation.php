@@ -79,5 +79,10 @@ public function wishlistItems(): HasMany
         return $this->hasMany(WishlistItem::class);
     }
 
+    public function ratings() 
+    { 
+        return $this->hasMany(Rating::class); 
+    }
+
 
 }
